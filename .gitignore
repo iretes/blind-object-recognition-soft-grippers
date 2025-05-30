@@ -1,3 +1,6 @@
 __pycache__
 **/.DS_Store
 dataset/
+/results/*.keras
+/results/*tuning
+/results/*.pkl
