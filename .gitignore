@@ -4,3 +4,6 @@ dataset/
 /results/*.keras
 /results/*tuning
 /results/*.pkl
+/results/*.log
+/results/*.pth
+/results/*.npy

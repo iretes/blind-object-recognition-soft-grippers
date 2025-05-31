@@ -1,25 +1,60 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import (
+    classification_report, confusion_matrix, ConfusionMatrixDisplay
+)
 
-def clf_report_to_df(clf_report, clf_scores_path=None, clf_per_class_scores_path=None):
+def get_trials_df(tuner):
     '''
-    Converts a classification report dictionary to two pandas DataFrames:
-    1. A DataFrame containing overall classification scores (accuracy, f1-score, precision, recall).
-    2. A DataFrame containing per-class classification scores (f1-score, precision, recall) for each class.
-    If paths are provided, the DataFrames will be saved as CSV files.
+    Converts the trials from a Keras Tuner object into a pandas DataFrame.
 
     Parameters:
-    clf_report (dict): The classification report dictionary from sklearn.metrics.classification_report.
-    clf_scores_path (str, optional): Path to save the overall classification scores DataFrame as a CSV file.
-    clf_per_class_scores_path (str, optional): Path to save the per-class classification scores DataFrame as a CSV file.
-
+    tuner (kerastuner.Tuner): A Keras Tuner object containing the trials.
+    
     Returns:
-    clf_scores_df (pd.DataFrame): DataFrame containing overall classification scores.
-    per_class_clf_scores_df (pd.DataFrame): DataFrame containing per-class classification scores.
+    pd.DataFrame: A DataFrame containing the hyperparameter values and
+        validation loss for each trial.
     '''
     
+    trials = tuner.oracle.trials.values()
+    hps = []
+    for trial in trials:
+        hp_values = trial.hyperparameters.get_config()["values"]
+        hp_values["val_loss"] = trial.score
+        hps.append(hp_values)
+    hp_df = pd.DataFrame(hps)
+    hp_df = hp_df.sort_values(by="val_loss")
+    return hp_df.style.background_gradient(cmap="Blues", subset=["val_loss"])
+
+def get_clf_report_dfs(
+        y_true, y_pred,
+        clf_scores_path=None,
+        clf_per_class_scores_path=None
+    ):
+    '''
+    Generates classification report DataFrames from true and predicted labels.
+
+    Parameters:
+    y_true (array-like): True labels.
+    y_pred (array-like): Predicted labels.
+    clf_scores_path (str, optional): Path to save the overall classification
+        scores as a CSV file. If None, scores are not saved.
+    clf_per_class_scores_path (str, optional): Path to save the per-class
+        classification scores as a CSV file. If None, scores are not saved.
+    
+    Returns:
+    tuple: A tuple containing two DataFrames:
+        - Overall classification scores DataFrame.
+        - Per-class classification scores DataFrame.
+    '''
+
+    clf_report = classification_report(
+        y_true=y_true,
+        y_pred=y_pred,
+        output_dict=True
+    )
+
     clf_scores = {}
     clf_scores['accuracy'] = clf_report['accuracy']
     clf_scores['f1-score macro avg'] = clf_report['macro avg']['f1-score']
@@ -50,7 +85,8 @@ def plot_confusion_matrix(y_true, y_pred, title, path=None):
     y_true (array-like): True labels.
     y_pred (array-like): Predicted labels.
     title (str): Title for the confusion matrix plot.
-    path (str, optional): Path to save the confusion matrix plot as an image file. If None, the plot will be shown but not saved.
+    path (str, optional): Path to save the confusion matrix plot as an image
+        file. If None, the plot will be shown but not saved.
     '''
     
     labels = np.unique(y_true)
