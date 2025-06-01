@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 import numpy as np
-#from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import time
 import copy
@@ -19,6 +19,7 @@ from .utils import kNearestNeighbor, reproductibility, load_ucr_dataset
 
 class DATW():
     def __init__(self,
+                 small_unet=False,
                  batch_size=64,
                  lr=1e-4,
                  pre_training_num_epochs=10,
@@ -31,6 +32,7 @@ class DATW():
                  device='cuda:0',
                  best_model=None) -> None:
         
+        self.small_unet = small_unet
         self.batch_size = batch_size
         self.lr = lr
         self.pre_training_num_epochs = pre_training_num_epochs
@@ -44,30 +46,31 @@ class DATW():
 
         self.best_model = best_model
 
-    def pre_training(self, X_train, y_train, X_val, y_val):
+    def pre_training(self, X_train, y_train, X_val=None, y_val=None, positive_ratio=1, negative_ratio=2):
         reproductibility(self.seed)
 
         ### data loader ###
-        # X_train, X_val, y_train, y_val = train_test_split(
-        #     X, y, test_size=0.1, random_state=self.seed)
-    
+        if X_val is None:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_train, y_train, test_size=0.1, random_state=self.seed)
+
         train_dataset = Dataset(X_train, y_train, stage='pre-training')
         train_batch_sampler = BalancedBatchSampler(
-            y_train, positive_ratio=1, negative_ratio=2, 
+            y_train, positive_ratio=positive_ratio, negative_ratio=negative_ratio, 
             iteration=self.pre_training_iteration, batch_size=self.batch_size)
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_sampler=train_batch_sampler, num_workers=4)
     
         val_dataset = Dataset(X_val, y_val, stage='pre-training')
         val_batch_sampler = BalancedBatchSampler(
-            y_val, positive_ratio=1, negative_ratio=2, 
+            y_val, positive_ratio=positive_ratio, negative_ratio=negative_ratio, 
             iteration=self.pre_training_iteration, batch_size=self.batch_size)
         val_loader = torch.utils.data.DataLoader(
             val_dataset, batch_sampler=val_batch_sampler, num_workers=4)
         
         ### define model & optimizer & loss function ###
         channel = X_train.shape[-1]
-        model = BipartiteAttention(input_ch=channel).to(self.device)
+        model = BipartiteAttention(input_ch=channel, small_unet=self.small_unet).to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, betas=(0.5, 0.999))
         loss_function = nn.MSELoss()    
 
@@ -127,16 +130,17 @@ class DATW():
             
         return history
 
-    def contrastive_learning(self, X_train, y_train, X_val, y_val, is_pre_training=True):
+    def contrastive_learning(self, X_train, y_train, X_val=None, y_val=None, is_pre_training=True, positive_ratio=1, negative_ratio=2):
         reproductibility(self.seed)
         
         ### data loader ###
-        # X_train, X_val, y_train, y_val = train_test_split(
-        #     X, y, test_size=0.1, random_state=self.seed)
+        if X_val is None:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_train, y_train, test_size=0.1, random_state=self.seed)
     
         train_dataset = Dataset(X_train, y_train, stage='contrastive-learning')
         train_batch_sampler = BalancedBatchSampler(
-            y_train, positive_ratio=1, negative_ratio=2, 
+            y_train, positive_ratio=positive_ratio, negative_ratio=negative_ratio,
             iteration=self.contrastive_learning_iteration, batch_size=self.batch_size)
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_sampler=train_batch_sampler, num_workers=4)
@@ -145,7 +149,7 @@ class DATW():
         if is_pre_training:
             model = self.best_model
         else:
-            model = BipartiteAttention(input_ch= X_train.shape[-1]).to(self.device)
+            model = BipartiteAttention(input_ch= X_train.shape[-1], small_unet=self.small_unet).to(self.device)
             
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, betas=(0.5, 0.999))
         loss_function = ContrastiveLoss(tau=self.tau)
