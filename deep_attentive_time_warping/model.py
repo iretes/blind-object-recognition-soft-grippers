@@ -88,16 +88,6 @@ class SmallUNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        # self.inc = DoubleConv(n_channels, 32)
-        # self.down1 = Down(32, 64)
-        # self.down2 = Down(64, 128)
-        # factor = 2 if bilinear else 1
-        # self.down3 = Down(128, 256 // factor)
-        # self.up1 = Up(256, 128 // factor, bilinear)
-        # self.up2 = Up(128, 64 // factor, bilinear)
-        # self.up3 = Up(64, 32, bilinear)
-        # self.outc = OutConv(32, n_classes)
-
         self.inc = DoubleConv(n_channels, 64)
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)

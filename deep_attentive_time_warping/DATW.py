@@ -46,7 +46,16 @@ class DATW():
 
         self.best_model = best_model
 
-    def pre_training(self, X_train, y_train, X_val=None, y_val=None, positive_ratio=1, negative_ratio=2):
+    def pre_training(
+            self,
+            X_train,
+            y_train,
+            X_val=None,
+            y_val=None,
+            positive_ratio=1,
+            negative_ratio=2
+        ):
+        
         reproductibility(self.seed)
 
         ### data loader ###
@@ -130,7 +139,17 @@ class DATW():
             
         return history
 
-    def contrastive_learning(self, X_train, y_train, X_val=None, y_val=None, is_pre_training=True, positive_ratio=1, negative_ratio=2):
+    def contrastive_learning(
+            self,
+            X_train,
+            y_train,
+            X_val=None,
+            y_val=None,
+            is_pre_training=True,
+            positive_ratio=1,
+            negative_ratio=2
+        ):
+        
         reproductibility(self.seed)
         
         ### data loader ###

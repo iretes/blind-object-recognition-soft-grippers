@@ -77,7 +77,7 @@ def get_clf_report_dfs(
 
     return clf_scores_df, per_class_clf_scores_df
 
-def plot_confusion_matrix(y_true, y_pred, title, path=None):
+def plot_confusion_matrix(y_true, y_pred, title, path=None, labels=None):
     '''
     Plots a confusion matrix for the given true and predicted labels.
 
@@ -87,9 +87,10 @@ def plot_confusion_matrix(y_true, y_pred, title, path=None):
     title (str): Title for the confusion matrix plot.
     path (str, optional): Path to save the confusion matrix plot as an image
         file. If None, the plot will be shown but not saved.
+    labels (array-like, optional): Labels to include in the confusion matrix.
     '''
-    
-    labels = np.unique(y_true)
+    if labels is None:
+        labels = np.unique(y_true)
     cm = confusion_matrix(y_true, y_pred, labels=labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
     disp.plot(cmap=plt.cm.Blues)
