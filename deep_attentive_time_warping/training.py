@@ -4,13 +4,13 @@ import pickle
 import json
 import argparse
 import numpy as np
-from deep_attentive_time_warping.DATW import DATW
+
+from .DATW import DATW
 
 def train_and_eval(
         exp_descr,
         dataset_path,
         results_dir,
-        small_unet,
         batch_size,
         lr,
         pre_training_num_epochs,
@@ -34,7 +34,6 @@ def train_and_eval(
     y_test = data['y_test']
 
     datw = DATW(
-        small_unet=small_unet,
         batch_size=batch_size,
         lr=lr,
         pre_training_num_epochs=pre_training_num_epochs,
@@ -52,7 +51,7 @@ def train_and_eval(
     pretraining_history = datw.pre_training(X_train=X_train, y_train=y_train,
                                             X_val=X_val, y_val=y_val)
     
-    print("Constrastive learning")
+    print("Contrastive learning")
     contrastive_history = datw.contrastive_learning(X_train=X_train, y_train=y_train,
                                                     X_val=X_val, y_val=y_val)
     
@@ -67,7 +66,7 @@ def train_and_eval(
         pickle.dump(contrastive_history, f)
     np.save(os.path.join(results_subdir, f"DATW_predictions.npy"), y_pred)
     exp_params = {
-        'dataset_path': dataset_path, 'small_unet': small_unet,
+        'dataset_path': dataset_path,
         'batch_size': batch_size, 'lr': lr,
         'pre_training_num_epochs': pre_training_num_epochs,
         'pre_training_iteration': pre_training_iteration,
@@ -89,9 +88,6 @@ if __name__ == '__main__':
         )
     parser.add_argument('--results_dir', type=str, required=True,
         help='Directory where the results will be saved.'
-    )
-    parser.add_argument('--small_unet', action='store_true', default=False,
-        help='Use a smaller U-Net architecture for the model.'
     )
     parser.add_argument('--batch_size', type=int, default=64,
         help='Batch size for training.'

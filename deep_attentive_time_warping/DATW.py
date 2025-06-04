@@ -1,5 +1,5 @@
 """
-This file is sourced from the following repository:
+This file is sourced from the following repository, with modifications:
 https://github.com/matsuo-shinnosuke/deep-attentive-time-warping/
 """
 
@@ -19,7 +19,6 @@ from .utils import kNearestNeighbor, reproductibility, load_ucr_dataset
 
 class DATW():
     def __init__(self,
-                 small_unet=False,
                  batch_size=64,
                  lr=1e-4,
                  pre_training_num_epochs=10,
@@ -32,7 +31,6 @@ class DATW():
                  device='cuda:0',
                  best_model=None) -> None:
         
-        self.small_unet = small_unet
         self.batch_size = batch_size
         self.lr = lr
         self.pre_training_num_epochs = pre_training_num_epochs
@@ -79,7 +77,7 @@ class DATW():
         
         ### define model & optimizer & loss function ###
         channel = X_train.shape[-1]
-        model = BipartiteAttention(input_ch=channel, small_unet=self.small_unet).to(self.device)
+        model = BipartiteAttention(input_ch=channel).to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, betas=(0.5, 0.999))
         loss_function = nn.MSELoss()    
 
@@ -168,8 +166,8 @@ class DATW():
         if is_pre_training:
             model = self.best_model
         else:
-            model = BipartiteAttention(input_ch= X_train.shape[-1], small_unet=self.small_unet).to(self.device)
-            
+            model = BipartiteAttention(input_ch= X_train.shape[-1]).to(self.device)
+        
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, betas=(0.5, 0.999))
         loss_function = ContrastiveLoss(tau=self.tau)
         knn = kNearestNeighbor(X_ref=X_train, y_ref=y_train, X_test=X_val, y_test=y_val,

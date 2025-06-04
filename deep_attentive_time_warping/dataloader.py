@@ -1,5 +1,5 @@
 """
-This file is sourced from the following repository:
+This file is sourced from the following repository, with modifications:
 https://github.com/matsuo-shinnosuke/deep-attentive-time-warping/
 """
 

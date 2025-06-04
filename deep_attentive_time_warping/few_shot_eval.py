@@ -3,8 +3,8 @@ import json
 import torch
 import argparse
 import numpy as np
-from siamese_network.siamese_network import SiameseNetwork
 from sklearn.model_selection import train_test_split
+from .DATW import DATW
 
 def few_shot_eval(
         exp_descr,
@@ -25,19 +25,23 @@ def few_shot_eval(
     X_train = base_data['X_train']
     y_train = base_data['y_train']
     X_test = base_data['X_test']
+    y_test = base_data['y_test']
 
     novel_data = np.load(novel_dataset_path)
     X_support = novel_data['X_support']
     y_support = novel_data['y_support']
     X_query = novel_data['X_query']
+    y_query = novel_data['y_query']
 
     with open(model_settings_path, 'r') as f:
         model_settings = json.load(f)
 
     model = torch.load(model_checkpoint_path, weights_only=False)
-    siamese_net = SiameseNetwork(
+    datw = DATW(
         batch_size=model_settings["batch_size"],
         lr=model_settings["lr"],
+        pre_training_num_epochs=model_settings["pre_training_num_epochs"],
+        pre_training_iteration=model_settings["pre_training_iteration"],
         contrastive_learning_num_epochs=model_settings["contrastive_learning_num_epochs"],
         contrastive_learning_iteration=model_settings["contrastive_learning_iteration"],
         tau=model_settings["tau"],
@@ -49,8 +53,8 @@ def few_shot_eval(
 
     X_train_support = np.concatenate((X_train, X_support), axis=0)
     y_train_support = np.concatenate((y_train, y_support), axis=0)
-    y_pred_query_full = siamese_net.predict(X_ref=X_train_support, y_ref=y_train_support, X_test=X_query)
-    np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_full_ref.npy"), y_pred_query_full)
+    y_pred_query_full = datw.predict(X_ref=X_train_support, y_ref=y_train_support, X_test=X_query, y_test=y_query)
+    np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_full_ref.npy"), y_pred_query_full)
 
     X_train_sub, _, y_train_sub, _ = train_test_split(
         X_train, y_train, 
@@ -60,11 +64,11 @@ def few_shot_eval(
     )
     X_train_sub_support = np.concatenate((X_train_sub, X_support), axis=0)
     y_train_sub_support = np.concatenate((y_train_sub, y_support), axis=0)
-    y_pred_query_sub = siamese_net.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query)
-    np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
+    y_pred_query_sub = datw.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query, y_test=y_query)
+    np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
 
-    y_pred_test = siamese_net.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test)
-    np.save(os.path.join(results_subdir, f"SN_predictions_sub_ref.npy"), y_pred_test)
+    y_pred_test = datw.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test, y_test=y_test)
+    np.save(os.path.join(results_subdir, f"DATW_predictions_sub_ref.npy"), y_pred_test)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

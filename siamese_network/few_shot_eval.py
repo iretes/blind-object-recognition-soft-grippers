@@ -3,8 +3,46 @@ import json
 import torch
 import argparse
 import numpy as np
-from deep_attentive_time_warping.DATW import DATW
 from sklearn.model_selection import train_test_split
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from .SN import SN
+
+def plot_embeddings(emb_base, y_base, emb_new, y_new, y_mapping, path, seed=42):
+    all_embs = np.vstack([emb_base, emb_new])
+    all_labels = np.concatenate([y_base, y_new])
+
+    tsne = TSNE(n_components=2, perplexity=30, init='pca', random_state=seed)
+    reduced_embs = tsne.fit_transform(all_embs)
+
+    red_base = reduced_embs[:len(emb_base)]
+    red_new = reduced_embs[len(emb_base):]
+
+    unique_labels = np.unique(all_labels)
+    colors = sns.color_palette("hls", len(unique_labels))
+
+    plt.figure(figsize=(8, 6))
+    
+    for i, label in enumerate(unique_labels):
+        color = colors[i]
+        base_idx = y_base == label
+        if np.any(base_idx):
+            plt.scatter(red_base[base_idx, 0], red_base[base_idx, 1],
+                        label=f'Class {y_mapping[label]}', alpha=0.6, color=color)
+        new_idx = y_new == label
+        if np.any(new_idx):
+            plt.scatter(red_new[new_idx, 0], red_new[new_idx, 1],
+                        label=f'Class {y_mapping[label]} (new)', alpha=0.6, color=color, marker='x')
+
+    plt.title('t-SNE of embeddings')
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.grid(True)
+    plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.tight_layout()
+    plt.savefig(path)
 
 def few_shot_eval(
         exp_descr,
@@ -25,7 +63,7 @@ def few_shot_eval(
     X_train = base_data['X_train']
     y_train = base_data['y_train']
     X_test = base_data['X_test']
-    y_test = base_data['y_test']
+    y_mapping = base_data['y_mapping']
 
     novel_data = np.load(novel_dataset_path)
     X_support = novel_data['X_support']
@@ -37,14 +75,12 @@ def few_shot_eval(
         model_settings = json.load(f)
 
     model = torch.load(model_checkpoint_path, weights_only=False)
-    datw = DATW(
-        small_unet=model_settings["small_unet"],
+    siamese_net = SN(
         batch_size=model_settings["batch_size"],
         lr=model_settings["lr"],
-        pre_training_num_epochs=model_settings["pre_training_num_epochs"],
-        pre_training_iteration=model_settings["pre_training_iteration"],
         contrastive_learning_num_epochs=model_settings["contrastive_learning_num_epochs"],
         contrastive_learning_iteration=model_settings["contrastive_learning_iteration"],
+        dropout=model_settings["dropout"],
         tau=model_settings["tau"],
         k=model_settings["k"],
         seed=model_settings["seed"],
@@ -54,8 +90,8 @@ def few_shot_eval(
 
     X_train_support = np.concatenate((X_train, X_support), axis=0)
     y_train_support = np.concatenate((y_train, y_support), axis=0)
-    y_pred_query_full = datw.predict(X_ref=X_train_support, y_ref=y_train_support, X_test=X_query, y_test=y_query)
-    np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_full_ref.npy"), y_pred_query_full)
+    y_pred_query_full = siamese_net.predict(X_ref=X_train_support, y_ref=y_train_support, X_test=X_query)
+    np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_full_ref.npy"), y_pred_query_full)
 
     X_train_sub, _, y_train_sub, _ = train_test_split(
         X_train, y_train, 
@@ -65,11 +101,22 @@ def few_shot_eval(
     )
     X_train_sub_support = np.concatenate((X_train_sub, X_support), axis=0)
     y_train_sub_support = np.concatenate((y_train_sub, y_support), axis=0)
-    y_pred_query_sub = datw.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query, y_test=y_query)
-    np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
+    y_pred_query_sub = siamese_net.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query)
+    np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
 
-    y_pred_test = datw.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test, y_test=y_test)
-    np.save(os.path.join(results_subdir, f"DATW_predictions_sub_ref.npy"), y_pred_test)
+    y_pred_test = siamese_net.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test)
+    np.save(os.path.join(results_subdir, f"SN_predictions_sub_ref.npy"), y_pred_test)
+
+    X_new = np.concatenate((X_support, X_query), axis=0)
+    y_new = np.concatenate((y_support, y_query), axis=0)
+    emb_train = siamese_net.get_embeddings(X_train)
+    emb_new = siamese_net.get_embeddings(X_new)
+    plot_embeddings(
+        emb_train, y_train,
+        emb_new, y_new,
+        y_mapping,
+        path=os.path.join(results_subdir, f"embeddings_plot.png"),
+        seed=seed)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

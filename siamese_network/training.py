@@ -4,7 +4,48 @@ import pickle
 import json
 import argparse
 import numpy as np
-from siamese_network.siamese_network import SiameseNetwork
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from .SN import SN
+
+def plot_embeddings(emb_train, y_train, emb_val, y_val, emb_test, y_test, y_mapping, path, seed=42):
+    all_embs = np.vstack([emb_train, emb_val, emb_test])
+    all_labels = np.concatenate([y_train, y_val, y_test])
+    all_domains = np.array(['train'] * len(emb_train) + ['val'] * len(emb_val) + ['test'] * len(emb_test))
+    
+    tsne = TSNE(n_components=2, perplexity=30, init='pca', random_state=seed)
+    all_embs_2d = tsne.fit_transform(all_embs)
+
+    red_train = all_embs_2d[all_domains == 'train']
+    red_val = all_embs_2d[all_domains == 'val']
+    red_test = all_embs_2d[all_domains == 'test']
+
+    labels_train = all_labels[all_domains == 'train']
+    labels_val = all_labels[all_domains == 'val']
+    labels_test = all_labels[all_domains == 'test']
+
+    _, axs = plt.subplots(1, 3, figsize=(18, 6))
+    subsets = [('Train', red_train, labels_train),
+            ('Validation', red_val, labels_val),
+            ('Test', red_test, labels_test)]
+    
+    colors = sns.color_palette("hls", len(np.unique(all_labels)))
+
+    for ax, (title, reduced, labels) in zip(axs, subsets):
+        for label in np.unique(labels):
+            idx = labels == label
+            ax.scatter(reduced[idx, 0], reduced[idx, 1],
+                    label=f'Class {y_mapping[label]}', alpha=0.6, c=[colors[label]])
+        ax.set_title(f't-SNE of {title} Embeddings')
+        ax.set_xlabel('Component 1')
+        ax.set_ylabel('Component 2')
+        ax.grid(True)
+
+    axs[2].legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.tight_layout()
+    plt.savefig(path)
 
 def train_and_eval(
         exp_descr,
@@ -14,6 +55,7 @@ def train_and_eval(
         lr,
         contrastive_learning_num_epochs,
         contrastive_learning_iteration,
+        dropout,
         tau,
         k,
         seed):
@@ -28,12 +70,15 @@ def train_and_eval(
     X_val = data['X_val']
     y_val = data['y_val']
     X_test = data['X_test']
+    y_test = data['y_test']
+    y_mapping = data['y_mapping']
 
-    siamese_net = SiameseNetwork(
+    siamese_net = SN(
         batch_size=batch_size,
         lr=lr,
         contrastive_learning_num_epochs=contrastive_learning_num_epochs,
         contrastive_learning_iteration=contrastive_learning_iteration,
+        dropout=dropout,
         tau=tau,
         k=k,
         seed=seed,
@@ -41,10 +86,32 @@ def train_and_eval(
         best_model=None
     )
     
-    print("Constrastive learning")
+    print("Contrastive learning")
     contrastive_history = siamese_net.fit(X_train=X_train, y_train=y_train,
                                                     X_val=X_val, y_val=y_val)
     
+    print("Plotting embeddings")
+    emb_train = siamese_net.get_embeddings(X_train)
+    emb_val = siamese_net.get_embeddings(X_val)
+    emb_test = siamese_net.get_embeddings(X_test)
+    plot_embeddings(
+        emb_train=emb_train, y_train=y_train,
+        emb_val=emb_val, y_val=y_val,
+        emb_test=emb_test, y_test=y_test,
+        y_mapping=y_mapping,
+        path=os.path.join(results_subdir, f"embeddings_plot.png"), seed=seed
+    )
+    emb_train = siamese_net.get_embeddings(X_train, siamese_net.last_model)
+    emb_val = siamese_net.get_embeddings(X_val, siamese_net.last_model)
+    emb_test = siamese_net.get_embeddings(X_test, siamese_net.last_model)
+    plot_embeddings(
+        emb_train=emb_train, y_train=y_train,
+        emb_val=emb_val, y_val=y_val,
+        emb_test=emb_test, y_test=y_test,
+        y_mapping=y_mapping,
+        path=os.path.join(results_subdir, f"last_model_embeddings_plot.png"), seed=seed
+    )
+
     print("Testing")
     y_pred = siamese_net.predict(X_ref=X_train, y_ref=y_train, X_test=X_test)
     
@@ -58,7 +125,7 @@ def train_and_eval(
         'batch_size': batch_size, 'lr': lr,
         'contrastive_learning_num_epochs': contrastive_learning_num_epochs,
         'contrastive_learning_iteration': contrastive_learning_iteration,
-        'tau': tau, 'k': k, 'seed': seed
+        'dropout': dropout, 'tau': tau, 'k': k, 'seed': seed
     }
     with open(os.path.join(results_subdir, f"experiment_settings.json"), 'w') as f:
         json.dump(exp_params, f)
@@ -86,6 +153,9 @@ if __name__ == '__main__':
     )
     parser.add_argument('--contrastive_learning_iteration', type=int, default=500,
         help='Number of iterations for contrastive learning.'
+    )
+    parser.add_argument('--dropout', type=float, default=0.0,
+        help='Dropout rate for the model.'
     )
     parser.add_argument('--tau', type=float, default=1,
         help='Temperature parameter for contrastive loss.'
