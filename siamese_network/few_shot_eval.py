@@ -104,8 +104,8 @@ def few_shot_eval(
     y_pred_query_sub = siamese_net.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query)
     np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
 
-    y_pred_test = siamese_net.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test)
-    np.save(os.path.join(results_subdir, f"SN_predictions_sub_ref.npy"), y_pred_test)
+    y_pred_query_new = siamese_net.predict(X_ref=X_support, y_ref=y_support, X_test=X_query)
+    np.save(os.path.join(results_subdir, f"SN_predictions_few_shot_new_ref.npy"), y_pred_query_new)
 
     X_new = np.concatenate((X_support, X_query), axis=0)
     y_new = np.concatenate((y_support, y_query), axis=0)
@@ -116,7 +116,8 @@ def few_shot_eval(
         emb_new, y_new,
         y_mapping,
         path=os.path.join(results_subdir, f"embeddings_plot.png"),
-        seed=seed)
+        seed=seed
+    )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

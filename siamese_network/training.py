@@ -85,7 +85,7 @@ def train_and_eval(
         device='cuda',
         best_model=None
     )
-    
+
     print("Contrastive learning")
     contrastive_history = siamese_net.fit(X_train=X_train, y_train=y_train,
                                                     X_val=X_val, y_val=y_val)

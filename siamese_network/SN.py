@@ -141,29 +141,3 @@ class SN():
         knn = KNeighborsClassifier(n_neighbors=self.k)
         knn.fit(emb_ref, y_ref)
         return knn.predict(emb_test)
-    
-    # def predict(self, X_ref, y_ref, X_test, model=None):
-    #     if model is None:
-    #         model = self.best_model
-
-    #     model.eval()
-
-    #     def get_embeddings(X):
-    #         loader = torch.utils.data.DataLoader(torch.tensor(X).float(), batch_size=self.batch_size)
-    #         embs = []
-    #         with torch.no_grad():
-    #             for x in loader:
-    #                 x = x.to(self.device)
-    #                 emb = model(x)
-    #                 emb = F.normalize(emb, p=2, dim=1)
-    #                 embs.append(emb.cpu())
-    #         return torch.cat(embs).numpy()
-
-    #     emb_ref = get_embeddings(X_ref)
-    #     emb_test = get_embeddings(X_test)
-
-    #     knn = KNeighborsClassifier(n_neighbors=self.k)
-    #     knn.fit(emb_ref, y_ref)
-
-    #     pred = knn.predict(emb_test)
-    #     return pred

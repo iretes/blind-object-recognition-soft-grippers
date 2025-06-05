@@ -1,5 +1,10 @@
 __pycache__
 **/.DS_Store
-dataset/
-results/**
-!results/**/*.png
+dataset/*
+results/**/*.h5
+results/**/*.keras
+results/**/*.npy
+results/**/*.pkl
+results/**/*.csv
+results/**/*.json
+results/**/*tuning/

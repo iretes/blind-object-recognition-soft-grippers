@@ -67,8 +67,8 @@ def few_shot_eval(
     y_pred_query_sub = datw.predict(X_ref=X_train_sub_support, y_ref=y_train_sub_support, X_test=X_query, y_test=y_query)
     np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_sub_ref.npy"), y_pred_query_sub)
 
-    y_pred_test = datw.predict(X_ref=X_train_sub, y_ref=y_train_sub, X_test=X_test, y_test=y_test)
-    np.save(os.path.join(results_subdir, f"DATW_predictions_sub_ref.npy"), y_pred_test)
+    y_pred_query_new = datw.predict(X_ref=X_support, y_ref=y_support, X_test=X_query, y_test=y_query)
+    np.save(os.path.join(results_subdir, f"DATW_predictions_few_shot_new_ref.npy"), y_pred_query_new)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

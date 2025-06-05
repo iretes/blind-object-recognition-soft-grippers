@@ -23,15 +23,8 @@ class CNN(nn.Module):
         super().__init__()
         self.enc1 = DoubleConv(in_channels, base_channels, dropout=dropout)
         self.pool1 = nn.MaxPool1d(2)
-
         self.enc2 = DoubleConv(base_channels, base_channels * 2, dropout=dropout)
-        #self.pool2 = nn.MaxPool1d(2)
-
-        #self.enc3 = DoubleConv(base_channels * 2, base_channels * 4, dropout=dropout)
-
         self.global_pool = nn.AdaptiveAvgPool1d(1)
-
-        #self.fc = nn.Linear(base_channels * 4, embedding_dim)
         self.fc = nn.Linear(base_channels*2, embedding_dim)
 
     def forward(self, x):
@@ -39,8 +32,6 @@ class CNN(nn.Module):
         x = self.enc1(x)
         x = self.pool1(x)
         x = self.enc2(x)
-        #x = self.pool2(x)
-        #x = self.enc3(x)
         x = self.global_pool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
