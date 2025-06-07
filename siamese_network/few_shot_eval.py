@@ -62,7 +62,6 @@ def few_shot_eval(
     base_data = np.load(base_dataset_path)
     X_train = base_data['X_train']
     y_train = base_data['y_train']
-    X_test = base_data['X_test']
     y_mapping = base_data['y_mapping']
 
     novel_data = np.load(novel_dataset_path)

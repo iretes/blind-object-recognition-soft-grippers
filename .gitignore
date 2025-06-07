@@ -1,7 +1,6 @@
 __pycache__
 **/.DS_Store
 dataset/*
-!dataset/.gitkeep
 results/**/*.h5
 results/**/*.keras
 results/**/*.npy

@@ -31,7 +31,7 @@ blind-object-recognition-soft-grippers/
   ├── DTW.ipynb                    # experiments with Dynamic Time Warping
   ├── LSTM.ipynb                   # experiments with a Long Short-Term Memory network
   ├── preprocessing.ipynb          # data preprocessing steps
-  ├── results_summary.ipynb        # summary of all experiments results
+  ├── results_summary.ipynb        # summary of all experiments' results
   ├── shapelet+XGB.ipynb           # experiments with XGBoost on Shapelets features
   ├── SN.ipynb                     # experiments with the Siamese Network
   ├── stats+XGB.ipynb              # experiments with XGBoost on time and frequency domain features
@@ -45,4 +45,4 @@ blind-object-recognition-soft-grippers/
 
 ---
 
-This project was developed for the “Robotics" course at the University of Pisa (a.y. 2024/2025).
+This project was developed for the "Robotics" course at the University of Pisa (a.y. 2024/2025).
