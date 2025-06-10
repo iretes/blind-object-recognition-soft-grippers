@@ -33,6 +33,7 @@ blind-object-recognition-soft-grippers/
   ├── preprocessing.ipynb          # data preprocessing steps
   ├── results_summary.ipynb        # summary of all experiments' results
   ├── shapelet+XGB.ipynb           # experiments with XGBoost on Shapelets features
+  ├── slides.pdf                   # slides for the project presentation 
   ├── SN.ipynb                     # experiments with the Siamese Network
   ├── stats+XGB.ipynb              # experiments with XGBoost on time and frequency domain features
   ├── transformer.ipynb            # experiments with a Transformer model
